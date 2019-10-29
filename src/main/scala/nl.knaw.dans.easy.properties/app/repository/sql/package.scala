@@ -51,7 +51,7 @@ package object sql {
     /** @return rowCount */
     def executeUpdateWith(values: Any*): Either[Seq[Throwable], Int] = {
       statement
-        .map(_.executeUpdateWith(values))
+        .map(executeUpdateWith(_, values))
         .either
         .either
     }
@@ -59,24 +59,20 @@ package object sql {
     def getResultSetForUpdateWith(values: Any*): ManagedResource[ResultSet] = {
       for {
         prepStatement <- statement
-        _ = prepStatement.executeUpdateWith(values)
+        _ = executeUpdateWith(prepStatement, values)
         resultSetForKey <- managed(prepStatement.getGeneratedKeys)
       } yield resultSetForKey
     }
-  }
 
-  implicit class RichPreparedStatement(val preparedStatement: PreparedStatement) extends AnyVal {
-
-    /** @return rowCount */
-    def executeUpdateWith(values: Any*): Int = {
+    private def executeUpdateWith(prep: PreparedStatement, values: Any*): Int = {
       values.zipWithIndex.foreach {
-        case (null, i) => preparedStatement.setString(i + 1, null)
-        case (value: Boolean, i) => preparedStatement.setBoolean(i + 1, value)
-        case (value: DateTime, i) => preparedStatement.setTimestamp(i + 1, value, timeZone)
-        case (value: String, i) => preparedStatement.setString(i + 1, value)
-        case (value, i) => preparedStatement.setString(i + 1, value.toString)
+        case (null, i) => prep.setString(i + 1, null)
+        case (value: Boolean, i) => prep.setBoolean(i + 1, value)
+        case (value: DateTime, i) => prep.setTimestamp(i + 1, value, timeZone)
+        case (value: String, i) => prep.setString(i + 1, value)
+        case (value, i) => prep.setString(i + 1, value.toString)
       }
-      preparedStatement.executeUpdate()
+      prep.executeUpdate()
     }
   }
 }
