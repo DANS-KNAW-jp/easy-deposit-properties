@@ -374,10 +374,9 @@ trait MutationType {
     resolve = ctx => DepositResolver.depositById(ctx.value.depositId)(ctx.ctx),
   )
 
-  implicit val DepositIdType: ScalarType[DepositId] = UUIDType // TODO caused compiler errors in DepositType when placed in ScalarTypes
   private val depositIdsFieldForDelete: Field[DataContext, DeleteDepositsPayload] = Field(
     name = "depositIds",
-    fieldType = ListType[DepositId](DepositIdType),
+    fieldType = ListType[DepositId](UUIDType),
     resolve = _.value.depositIds,
   )
 

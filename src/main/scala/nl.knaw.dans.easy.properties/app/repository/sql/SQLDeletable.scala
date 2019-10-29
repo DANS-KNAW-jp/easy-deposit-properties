@@ -27,25 +27,25 @@ trait SQLDeletable extends Deletable {
   implicit val connection: Connection
   private[sql] val daoName: String
 
-  /** @return number of delete rows */
-  def deleteBy(ids: Seq[DepositId]): MutationErrorOr[Int] = {
+  def deleteBy(ids: Seq[DepositId]): MutationErrorOr[Unit] = {
     NonEmptyList.fromList(ids.toList)
       .map(delete)
-      .getOrElse(0.asRight)
+      .getOrElse(().asRight)
   }
 
-  /** @return rowCount */
-  private def delete(ids: NonEmptyList[DepositId]): MutationErrorOr[Int] = {
+  private def delete(ids: NonEmptyList[DepositId]): MutationErrorOr[Unit] = {
     managed(connection.prepareStatement(getQuery(ids)))
       .map(statement =>
         statement.executeUpdateWith(ids.map(_.toString).toList: _*)
       )
       .either
       .either
-      .leftMap(throwables => {
-        assert(throwables.nonEmpty)
-        MutationError(throwables.map(_.getMessage).mkString("; "))
-      })
+      .bimap(
+        throwables => {
+          assert(throwables.nonEmpty)
+          MutationError(throwables.map(_.getMessage).mkString("; "))
+        },
+        _ => ())
   }
 
   private[sql] def getQuery(ids: NonEmptyList[DepositId]): String = {

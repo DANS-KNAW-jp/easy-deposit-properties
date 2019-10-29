@@ -23,8 +23,7 @@ class Deleter(repository: => Repository) {
 
   def deleteDepositsBy(ids: Seq[DepositId]): MutationErrorOr[Seq[DepositId]] = {
     for {
-      deposits <- repository.deposits.find(ids).leftMap(error => MutationError(error.msg))
-      actualIds = deposits.map(_.id).toList
+      actualIds <- findActualDepositIds(ids)
       _ <- repository.states.deleteBy(actualIds)
       _ <- repository.identifiers.deleteBy(actualIds)
       _ <- repository.curation.deleteBy(actualIds)
@@ -35,5 +34,11 @@ class Deleter(repository: => Repository) {
       _ <- repository.contentType.deleteBy(actualIds)
       _ <- repository.deposits.deleteBy(actualIds) // last because of foreign keys by the other.deleteBy(actualIds)
     } yield actualIds
+  }
+
+  private def findActualDepositIds(ids: Seq[DepositId]): MutationErrorOr[List[DepositId]] = {
+    repository.deposits
+      .find(ids)
+      .bimap(error => MutationError(error.msg), _.map(_.id).toList)
   }
 }
