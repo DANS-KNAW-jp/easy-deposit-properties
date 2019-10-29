@@ -71,9 +71,7 @@ class SQLDepositDao(override implicit val connection: Connection) extends Deposi
     val query = QueryGenerator.storeDeposit
 
     managed(connection.prepareStatement(query))
-      .map(_.executeUpdateWith(deposit.id, deposit.bagName.orNull, deposit.creationTimestamp, deposit.depositorId, deposit.origin))
-      .either
-      .either
+      .executeUpdateWith(deposit.id, deposit.bagName.orNull, deposit.creationTimestamp, deposit.depositorId, deposit.origin)
       .leftMap(_ => DepositAlreadyExistsError(deposit.id))
       .map(_ => deposit)
   }
@@ -83,9 +81,7 @@ class SQLDepositDao(override implicit val connection: Connection) extends Deposi
     val query = QueryGenerator.storeBagName
 
     managed(connection.prepareStatement(query))
-      .map(_.executeUpdateWith(bagName, depositId))
-      .either
-      .either
+      .executeUpdateWith(bagName, depositId)
       .leftMap(_ => NoSuchDepositError(depositId))
       .flatMap {
         case 0 =>

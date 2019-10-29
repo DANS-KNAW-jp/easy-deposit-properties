@@ -21,6 +21,7 @@ import java.util.Calendar
 import nl.knaw.dans.easy.properties.app.model.DepositId
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 import org.joda.time.{ DateTime, DateTimeZone }
+import resource.ManagedResource
 
 import scala.language.implicitConversions
 
@@ -44,6 +45,18 @@ package object sql {
   def setInt(int: => Int): PrepStatementResolver = (ps, i) => ps.setInt(i, int)
 
   def setInt(s: String): PrepStatementResolver = setInt(s.toInt)
+
+  implicit class RichManagedStatement(val statement: ManagedResource[PreparedStatement]) extends AnyVal {
+
+    /** @return rowCount */
+    def executeUpdateWith(values: Any*): Either[Seq[Throwable], Int] = {
+      statement
+        .map(_.executeUpdateWith(values))
+        .either
+        .either
+
+    }
+  }
 
   implicit class RichPreparedStatement(val preparedStatement: PreparedStatement) extends AnyVal {
 

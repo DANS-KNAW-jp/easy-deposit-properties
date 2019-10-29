@@ -37,11 +37,7 @@ trait SQLDeletable extends Deletable {
   /** @return rowCount */
   private def delete(ids: NonEmptyList[DepositId]): MutationErrorOr[Int] = {
     managed(connection.prepareStatement(getQuery(ids)))
-      .map(statement =>
-        statement.executeUpdateWith(ids.map(_.toString).toList: _*)
-      )
-      .either
-      .either
+      .executeUpdateWith(ids.map(_.toString).toList: _*)
       .leftMap(throwables => {
         assert(throwables.nonEmpty)
         MutationError(throwables.map(_.getMessage).mkString("; "))
