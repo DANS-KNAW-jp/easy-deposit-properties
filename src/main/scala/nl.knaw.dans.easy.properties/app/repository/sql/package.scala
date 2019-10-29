@@ -22,7 +22,6 @@ import nl.knaw.dans.easy.properties.app.model.DepositId
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 import org.joda.time.{ DateTime, DateTimeZone }
 
-import scala.annotation.tailrec
 import scala.language.implicitConversions
 
 package object sql {
