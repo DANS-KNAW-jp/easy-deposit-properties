@@ -84,16 +84,12 @@ class SQLCurationDao(override implicit val connection: Connection, errorHandler:
     trace(id, curation)
     val query = QueryGenerator.storeCuration(isNewVersionDefined = curation.isNewVersion.isDefined)
 
-    val managedResultSet = for {
-      prepStatement <- managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
-      mandatoryParams = Seq(id, curation.isRequired, curation.isPerformed, curation.datamanagerUserId, curation.datamanagerEmail, curation.timestamp)
-      // only include this parameter if isNewVersion is defined; the query keeps this optional parameter into account
-      params = curation.isNewVersion.fold(mandatoryParams)(mandatoryParams :+ _)
-      _ = prepStatement.executeUpdateWith(params: _*)
-      resultSetForKey <- managed(prepStatement.getGeneratedKeys)
-    } yield resultSetForKey
+    val mandatoryParams = Seq(id, curation.isRequired, curation.isPerformed, curation.datamanagerUserId, curation.datamanagerEmail, curation.timestamp)
+    // only include this parameter if isNewVersion is defined; the query keeps this optional parameter into account
+    val params = curation.isNewVersion.fold(mandatoryParams)(mandatoryParams :+ _)
 
-    managedResultSet
+    managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
+      .getResultSetForUpdateWith(params: _*)
       .map {
         case resultSet if resultSet.next() => resultSet.getLong(1).toString.asRight
         case _ => throw new Exception(s"not able to insert curation data (isNewVersion = ${ curation.isNewVersion.getOrElse("none") }, curation required = ${ curation.isRequired }, curation performed = ${ curation.isPerformed }, datamanager userId = ${ curation.datamanagerUserId }, datamanager email = ${ curation.datamanagerEmail }, timestamp = ${ curation.timestamp })")
