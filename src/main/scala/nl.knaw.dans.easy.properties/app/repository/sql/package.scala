@@ -15,12 +15,13 @@
  */
 package nl.knaw.dans.easy.properties.app.repository
 
-import java.sql.{ PreparedStatement, Timestamp }
+import java.sql.{ PreparedStatement, ResultSet, Timestamp }
 import java.util.Calendar
 
 import nl.knaw.dans.easy.properties.app.model.DepositId
 import org.joda.time.format.{ DateTimeFormatter, ISODateTimeFormat }
 import org.joda.time.{ DateTime, DateTimeZone }
+import resource.{ ManagedResource, managed }
 
 import scala.language.implicitConversions
 
@@ -45,18 +46,33 @@ package object sql {
 
   def setInt(s: String): PrepStatementResolver = setInt(s.toInt)
 
-  implicit class RichPreparedStatement(val preparedStatement: PreparedStatement) extends AnyVal {
+  implicit class RichManagedStatement(val statement: ManagedResource[PreparedStatement]) extends AnyVal {
 
     /** @return rowCount */
-    def executeUpdateWith(values: Any*): Int = {
+    def executeUpdateWith(values: Any*): Either[Seq[Throwable], Int] = {
+      statement
+        .map(executeUpdateWith(_, values))
+        .either
+        .either
+    }
+
+    def getResultSetForUpdateWith(values: Any*): ManagedResource[ResultSet] = {
+      for {
+        prepStatement <- statement
+        _ = executeUpdateWith(prepStatement, values)
+        resultSetForKey <- managed(prepStatement.getGeneratedKeys)
+      } yield resultSetForKey
+    }
+
+    private def executeUpdateWith(prep: PreparedStatement, values: Seq[Any]): Int = {
       values.zipWithIndex.foreach {
-        case (null, i) => preparedStatement.setString(i + 1, null)
-        case (value: Boolean, i) => preparedStatement.setBoolean(i + 1, value)
-        case (value: DateTime, i) => preparedStatement.setTimestamp(i + 1, value, timeZone)
-        case (value: String, i) => preparedStatement.setString(i + 1, value)
-        case (value, i) => preparedStatement.setString(i + 1, value.toString)
+        case (null, i) => prep.setString(i + 1, null)
+        case (value: Boolean, i) => prep.setBoolean(i + 1, value)
+        case (value: DateTime, i) => prep.setTimestamp(i + 1, value, timeZone)
+        case (value: String, i) => prep.setString(i + 1, value)
+        case (value, i) => prep.setString(i + 1, value.toString)
       }
-      preparedStatement.executeUpdate()
+      prep.executeUpdate()
     }
   }
 }

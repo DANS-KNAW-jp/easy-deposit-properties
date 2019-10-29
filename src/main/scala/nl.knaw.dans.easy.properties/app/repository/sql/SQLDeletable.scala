@@ -35,17 +35,14 @@ trait SQLDeletable extends Deletable {
 
   private def delete(ids: NonEmptyList[DepositId]): MutationErrorOr[Unit] = {
     managed(connection.prepareStatement(getQuery(ids)))
-      .map(statement =>
-        statement.executeUpdateWith(ids.map(_.toString).toList: _*)
-      )
-      .either
-      .either
+      .executeUpdateWith(ids.map(_.toString).toList: _*)
       .bimap(
         throwables => {
           assert(throwables.nonEmpty)
           MutationError(throwables.map(_.getMessage).mkString("; "))
         },
-        _ => ())
+        _ => (),
+      )
   }
 
   private[sql] def getQuery(ids: NonEmptyList[DepositId]): String = {

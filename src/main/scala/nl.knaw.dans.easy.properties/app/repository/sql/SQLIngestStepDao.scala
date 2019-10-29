@@ -75,13 +75,8 @@ class SQLIngestStepDao(override implicit val connection: Connection, errorHandle
 
     val query = QueryGenerator.storeSimpleProperty
 
-    val managedResultSet = for {
-      prepStatement <- managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
-      _ = prepStatement.executeUpdateWith(id, key, step.step, step.timestamp)
-      resultSetForKey <- managed(prepStatement.getGeneratedKeys)
-    } yield resultSetForKey
-
-    managedResultSet
+    managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
+      .getResultSetForUpdateWith(id, key, step.step, step.timestamp)
       .map {
         case resultSet if resultSet.next() => resultSet.getLong(1).toString.asRight
         case _ => throw new Exception(s"not able to insert ingest step (${ step.step }, ${ step.timestamp })")

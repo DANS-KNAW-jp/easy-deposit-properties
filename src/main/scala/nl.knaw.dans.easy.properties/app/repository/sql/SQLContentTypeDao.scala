@@ -75,13 +75,8 @@ class SQLContentTypeDao(override implicit val connection: Connection, errorHandl
 
     val query = QueryGenerator.storeSimpleProperty
 
-    val managedResultSet = for {
-      prepStatement <- managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
-      _ = prepStatement.executeUpdateWith(id, key, contentType.value, contentType.timestamp)
-      resultSetForKey <- managed(prepStatement.getGeneratedKeys)
-    } yield resultSetForKey
-
-    managedResultSet
+    managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
+      .getResultSetForUpdateWith(id, key, contentType.value, contentType.timestamp)
       .map {
         case resultSet if resultSet.next() => resultSet.getLong(1).toString.asRight
         case _ => throw new Exception(s"not able to insert content type (${ contentType.value }, ${ contentType.timestamp })")
