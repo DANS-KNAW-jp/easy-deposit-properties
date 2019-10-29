@@ -21,32 +21,18 @@ import cats.scalatest.EitherValues
 import cats.syntax.either._
 import nl.knaw.dans.easy.properties.fixture.{ DatabaseDataFixture, DatabaseFixture, FileSystemSupport, TestSupportFixture }
 
-import scala.util.{ Failure, Try }
-
 class DeleterSpec extends TestSupportFixture
   with FileSystemSupport
   with DatabaseFixture
   with DatabaseDataFixture
   with EitherValues {
 
-  private val uuid5: UUID = UUID.fromString("00000000-0000-0000-0000-000000000005") // exists
+  private val uuid5: UUID = depositId5 // exists
   private val uuid6: UUID = UUID.fromString("00000000-0000-0000-0000-000000000006") // does not exist
 
   "delete" should "fail with a foreign key violation" in {
     repository.deposits.deleteBy(Seq(uuid5)).leftValue.msg shouldBe
       "integrity constraint violation: foreign key no action; SYS_FK_10153 table: STATE"
-  }
-
-  it should "fail with a NullPointerException" in {
-    // TODO Would rather like an IllegalInputException and some additional info
-    val deleter = new Deleter(repository)
-    Try(deleter.deleteDepositsBy(Seq(null))) should matchPattern {
-      case Failure(e) if e.isInstanceOf[NullPointerException] =>
-    }
-  }
-
-  it should "fail on a null as id" in {
-    repository.deposits.deleteBy(Seq(null)).leftValue.msg shouldBe "null"
   }
 
   it should "succeed with a mix of existing and non existing IDs" in {
@@ -55,7 +41,7 @@ class DeleterSpec extends TestSupportFixture
 
     // just sampling preconditions of one other table
     repository.states.getAll(uuids).getOrElse(fail) should matchPattern {
-      case List((_, List(_, _, _, _)), (_, List())) => // 4 states were found for the first ID
+      case List((`uuid5`, List(_, _, _, _)), (`uuid6`, List())) => // 4 states were found for uuid5, none for uuid6
     }
 
     deleter.deleteDepositsBy(uuids) should matchPattern {
@@ -65,7 +51,7 @@ class DeleterSpec extends TestSupportFixture
 
     // sampling post conditions of the same other table
     repository.states.getAll(uuids).getOrElse(fail) should matchPattern {
-      case List((_, List()), (_, List())) => // no states at all any more
+      case List((`uuid5`, List()), (`uuid6`, List())) => // no states at all any more
     }
   }
 

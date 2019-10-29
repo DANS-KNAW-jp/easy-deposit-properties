@@ -59,9 +59,7 @@ class SQLCurationDaoSpec extends TestSupportFixture
   "getCurrent" should "return the current curation configurations of the given deposits" in {
     val curations = new SQLCurationDao
 
-    curations.getCurrent(Seq(depositId1, depositId2)).value should contain only (
-      depositId1 -> curation2,
-      )
+    curations.getCurrent(Seq(depositId1, depositId2)).value should contain only (depositId1 -> curation2)
   }
 
   it should "return an empty collection if the depositId is unknown" in {
