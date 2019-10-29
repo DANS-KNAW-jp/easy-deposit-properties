@@ -78,7 +78,7 @@ class SQLSpringfieldDao(override implicit val connection: Connection, errorHandl
 
     val managedResultSet = for {
       prepStatement <- managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
-      _ = prepStatement.executeUpdateWith(Seq(id, springfield.domain, springfield.user, springfield.collection, springfield.playmode, springfield.timestamp))
+      _ = prepStatement.executeUpdateWith(id, springfield.domain, springfield.user, springfield.collection, springfield.playmode, springfield.timestamp)
       resultSetForKey <- managed(prepStatement.getGeneratedKeys)
     } yield resultSetForKey
 

@@ -86,10 +86,10 @@ class SQLCurationDao(override implicit val connection: Connection, errorHandler:
 
     val managedResultSet = for {
       prepStatement <- managed(connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS))
-      mandatoryParams = Seq(id.toString, curation.isRequired, curation.isPerformed, curation.datamanagerUserId, curation.datamanagerEmail, curation.timestamp)
+      mandatoryParams = Seq(id, curation.isRequired, curation.isPerformed, curation.datamanagerUserId, curation.datamanagerEmail, curation.timestamp)
       // only include this parameter if isNewVersion is defined; the query keeps this optional parameter into account
-      params = curation.isNewVersion.map(mandatoryParams :+ _).getOrElse(mandatoryParams)
-      _ = prepStatement.executeUpdateWith(params)
+      params = curation.isNewVersion.fold(mandatoryParams)(mandatoryParams :+ _)
+      _ = prepStatement.executeUpdateWith(params: _*)
       resultSetForKey <- managed(prepStatement.getGeneratedKeys)
     } yield resultSetForKey
 
