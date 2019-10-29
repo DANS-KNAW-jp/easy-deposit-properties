@@ -64,7 +64,7 @@ package object sql {
       } yield resultSetForKey
     }
 
-    private def executeUpdateWith(prep: PreparedStatement, values: Any*): Int = {
+    private def executeUpdateWith(prep: PreparedStatement, values: Seq[Any]): Int = {
       values.zipWithIndex.foreach {
         case (null, i) => prep.setString(i + 1, null)
         case (value: Boolean, i) => prep.setBoolean(i + 1, value)
